@@ -1,35 +1,76 @@
-# SEAPEDIA E-Commerce Platform
+# SEAPEDIA — Backend (Spring Boot)
 
-SEAPEDIA is a comprehensive multi-role e-commerce system supporting public users, buyers, sellers, drivers, and administrators. This project implements a fully functional marketplace with role-based dashboards, single-store cart behavior, complex discount structures, order SLA tracking, and robust security.
-
-## 🚀 Running the Project & Demo Setup
-
-SEAPEDIA includes an automated demo seeder to make evaluation incredibly easy. 
-
-### Starting the Backend with Demo Data
-To instantly generate all required roles (Admin, Seller, Buyer, Driver) along with a pre-configured store and wallets, run the Spring Boot application with the following flag:
-
-```bash
-cd seapedia-be
-./gradlew bootRun --args="--seed.demo=true"
-```
-
-### Demo Accounts Generated
-| Role | Username | Password | Notes |
-|------|----------|----------|-------|
-| Admin | `admin` | `adminseapedia` | Full monitoring access |
-| Seller | `seller1` | `sellerseapedia` | "Toko Seller Seapedia" auto-created |
-| Buyer | `buyer1` | `buyerseapedia` | Rp 1.000.000 wallet balance auto-created |
-| Driver | `driver1` | `driverseapedia` | Ready to take delivery jobs |
-
-*Note: You can log into any of these accounts immediately on the frontend.*
+Spring Boot REST API for the SEAPEDIA multi-role e-commerce platform.  
+Handles authentication, products, orders, payments, delivery jobs, discounts, and admin monitoring.
 
 ---
 
-## 📖 API Documentation (Swagger)
+## 🛠️ How to Run Locally
 
-The backend exposes a fully interactive OpenAPI specification via Swagger UI.
-Once the backend is running, navigate to:
+### Prerequisites
+
+| Tool | Version |
+|------|---------|
+| **Java** | 17 or later |
+| **Gradle** | Bundled (use `./gradlew`) |
+| **PostgreSQL** | Any, or use [Supabase](https://supabase.com) |
+
+---
+
+### 1. Configure Environment Variables
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and fill in your values:
+
+```env
+# PostgreSQL / Supabase connection
+SUPABASE_DB_URL=jdbc:postgresql://<host>:<port>/<database>?sslmode=require
+SUPABASE_DB_USERNAME=postgres
+SUPABASE_DB_PASSWORD=your_database_password
+
+# JWT — generate with: openssl rand -base64 32
+JWT_SECRET=your_jwt_secret_base64_encoded
+JWT_EXPIRATION_MS=86400000
+```
+
+> **Using Supabase?**  
+> Go to **Supabase Dashboard → Settings → Database → Connection String (URI)**.  
+> Copy the URI and paste it as `SUPABASE_DB_URL`. The username and password are the same as shown there.
+
+---
+
+### 2. Run the Backend
+
+```bash
+./gradlew bootRun
+```
+
+The API will be available at **http://localhost:8080**.
+
+> **First time running?** Seed demo accounts automatically:
+> ```bash
+> ./gradlew bootRun --args="--seed.demo=true"
+> ```
+
+---
+
+### 3. Demo Accounts (after seeding)
+
+| Role | Username | Password | Notes |
+|------|----------|----------|-------|
+| Admin | `admin` | `adminseapedia` | Full monitoring access |
+| Seller | `seller1` | `sellerseapedia` | Store "Toko Seller Seapedia" auto-created |
+| Buyer | `buyer1` | `buyerseapedia` | Rp 1.000.000 wallet balance auto-created |
+| Driver | `driver1` | `driverseapedia` | Ready to take delivery jobs |
+
+---
+
+### 4. API Documentation (Swagger)
+
+Once the backend is running, open:  
 **[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)**
 
 ---
@@ -70,39 +111,38 @@ Once the backend is running, navigate to:
 
 ## 🔒 Security Hardening
 
-SEAPEDIA employs strict security measures across both the frontend and backend to mitigate OWASP Top 10 vulnerabilities:
+SEAPEDIA employs strict security measures to mitigate OWASP Top 10 vulnerabilities:
 
 ### 1. SQL Injection Prevention
 - The backend leverages **Spring Data JPA** and Hibernate exclusively for database interactions.
-- All dynamic query parameters are strictly bound via Prepared Statements, neutralizing SQL Injection (SQLi) attack vectors.
-- **Attack Mitigated:** Submitting a username like `' OR '1'='1` or a review comment like `'); DROP TABLE application_reviews; --` is treated as literal text, preventing malicious database manipulation.
+- All dynamic query parameters are strictly bound via Prepared Statements — no raw SQL.
+- **Attack mitigated:** Submitting a username like `' OR '1'='1` or a review like `'); DROP TABLE application_reviews; --` is treated as literal text.
 
 ### 2. XSS (Cross-Site Scripting) Prevention
-- The React frontend inherently escapes HTML entities in variables (e.g. `{review.comment}`), preventing script execution.
-- As an added defense-in-depth layer, **DOMPurify** is utilized to rigorously sanitize public user inputs (such as Application Reviews) before they are sent to the server.
-- The UI features a robust **Toast notification system** that actively warns users if their input contains malicious payloads.
-- **Attack Mitigated:** Submitting a review comment containing `<script>alert('XSS')</script>` or `<img src="x" onerror="alert(1)">` will be immediately intercepted, sanitized, and blocked by the frontend, triggering a security warning toast.
+- React inherently escapes HTML entities in variables (e.g. `{review.comment}`), preventing script execution.
+- **DOMPurify** sanitizes all public user inputs (e.g. Application Reviews) before they are sent to the server.
+- The global Toast notification system warns users when a malicious payload is detected and blocked.
+- **Attack mitigated:** A review containing `<script>alert('XSS')</script>` or `<img src="x" onerror="alert(1)">` is intercepted, sanitized, and blocked with a security warning toast.
 
 ### 3. Input Validation & Data Integrity
-- **Backend**: Standardized `@Valid` constraints (`@NotBlank`, `@Min`, `@Max`, `@Email`) are enforced on all DTOs. Advanced regex (`@Pattern`) is utilized to validate phone numbers.
-- **Frontend**: Client-side validation prevents invalid states (e.g. negative quantities, ratings > 5) from ever reaching the network layer.
-- **Attack Mitigated:** Submitting a rating of `999` or attempting to bypass cart limitations via API tools (e.g., Postman) will be cleanly rejected with a `400 Bad Request` by the Spring Boot validation layer.
+- **Backend:** Standardized `@Valid` constraints (`@NotBlank`, `@Min`, `@Max`, `@Email`, `@Pattern`) are enforced on all DTOs. Advanced regex validates phone numbers.
+- **Frontend:** Client-side validation prevents invalid states (e.g. negative quantities, ratings > 5) from reaching the network layer.
+- **Attack mitigated:** Submitting a rating of `999` or bypassing cart limits via API tools (e.g. Postman) will be cleanly rejected with `400 Bad Request`.
 
 ### 4. Role-Based Access Control (RBAC) & Session Hardening
-- **Stateless Sessions**: Authentication is handled via stateless JWTs. Upon logout, the client actively destroys the token, fully invalidating the session from the browser's perspective.
-- **Strict Role Verification**: Every protected API route enforces authorization via `@PreAuthorize` annotations tailored to the user's *currently active role*, ensuring users cannot escalate privileges even if they own multiple roles.
-- **Resource Ownership**: Endpoints strictly verify resource ownership.
-- **Attack Mitigated:** A user with a `BUYER` role attempting to call `POST /api/seller/products` using their valid JWT will be blocked with a `403 Forbidden`. Similarly, a `DRIVER` attempting to complete a job assigned to a different driver ID will be rejected.
+- **Stateless JWTs:** Upon logout, the client destroys the token, fully invalidating the session from the browser's perspective.
+- **Strict role verification:** Every protected route enforces authorization via `@PreAuthorize` annotations scoped to the user's *currently active role* — users cannot escalate privileges even if they own multiple roles.
+- **Resource ownership:** Endpoints strictly verify resource ownership.
+- **Attack mitigated:** A `BUYER` calling `POST /api/seller/products` with a valid JWT gets `403 Forbidden`. A `DRIVER` trying to complete a job assigned to a different driver is rejected.
 
 ---
 
-## 🧪 End-to-End Testing Guide
+## 🧪 End-to-End Test Flow
 
-Follow this quick guide to test the entire lifecycle:
-1. **Seed Data**: Start backend with `--seed.demo=true`.
-2. **Admin Action**: Login as `admin`. Create a Voucher and Promo in the discount dashboard.
-3. **Seller Action**: Login as `seller1`. Go to Seller dashboard and add a new Product with stock.
-4. **Buyer Action**: Login as `buyer1`. Add the product to cart, apply the created Voucher & Promo, add an address, and Checkout.
-5. **Seller Action**: Login as `seller1`. Go to Orders, click **"Siap Dikirim"** to process the order.
-6. **Driver Action**: Login as `driver1`. View available jobs, Take the job, and eventually Complete it.
-7. **Simulation**: As `admin`, try "Simulate Next Day" on an unprocessed order to see the Auto-Refund logic trigger.
+1. **Seed** — start with `--seed.demo=true`
+2. **Admin** — create a Voucher and Promo
+3. **Seller** — add a product with stock
+4. **Buyer** — add to cart, apply discounts, add address, checkout
+5. **Seller** — go to Orders → process the order ("Siap Dikirim")
+6. **Driver** — find the job, take it, complete delivery
+7. **Admin** — use "Simulate Next Day" to trigger the overdue auto-refund demo
