@@ -21,13 +21,16 @@ public class OrderService {
     private final CustomerOrderRepository orderRepository;
     private final UserRepository userRepository;
     private final SellerStoreRepository storeRepository;
+    private final com.seapedia.be.repository.DeliveryJobRepository deliveryJobRepository;
 
     public OrderService(CustomerOrderRepository orderRepository,
                         UserRepository userRepository,
-                        SellerStoreRepository storeRepository) {
+                        SellerStoreRepository storeRepository,
+                        com.seapedia.be.repository.DeliveryJobRepository deliveryJobRepository) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.storeRepository = storeRepository;
+        this.deliveryJobRepository = deliveryJobRepository;
     }
 
     private User getUser(String username) {
@@ -111,6 +114,15 @@ public class OrderService {
                 .build();
         
         order.getStatusHistory().add(history);
+        
+        // Create DeliveryJob
+        java.math.BigDecimal earning = order.getDeliveryFee().multiply(new java.math.BigDecimal("0.8")).setScale(2, java.math.RoundingMode.HALF_UP);
+        com.seapedia.be.model.DeliveryJob deliveryJob = com.seapedia.be.model.DeliveryJob.builder()
+                .order(order)
+                .status(com.seapedia.be.enums.DeliveryJobStatus.AVAILABLE)
+                .earning(earning)
+                .build();
+        deliveryJobRepository.save(deliveryJob);
         
         return mapToOrderDetailResponse(order);
     }
