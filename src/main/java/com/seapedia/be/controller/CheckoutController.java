@@ -23,8 +23,9 @@ public class CheckoutController {
 
     @GetMapping("/summary")
     public CheckoutSummaryResponse getCheckoutSummary(@AuthenticationPrincipal AuthenticatedUser user,
-                                                      @RequestParam DeliveryMethod deliveryMethod) {
-        return checkoutService.getCheckoutSummary(user.username(), deliveryMethod);
+                                                      @RequestParam DeliveryMethod deliveryMethod,
+                                                      @RequestParam(required = false) String discountCode) {
+        return checkoutService.getCheckoutSummary(user.username(), deliveryMethod, discountCode);
     }
 
     @PostMapping

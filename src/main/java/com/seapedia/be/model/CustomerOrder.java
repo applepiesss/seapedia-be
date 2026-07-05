@@ -33,6 +33,18 @@ public class CustomerOrder {
     @Column(nullable = false)
     private OrderStatus status;
 
+    @Column(nullable = true, precision = 14, scale = 2)
+    @Builder.Default
+    private BigDecimal discount = BigDecimal.ZERO;
+
+    @Column(nullable = true)
+    private String discountCode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
+    @Builder.Default
+    private com.seapedia.be.enums.DiscountType discountType = com.seapedia.be.enums.DiscountType.NONE;
+
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal subtotal;
 
