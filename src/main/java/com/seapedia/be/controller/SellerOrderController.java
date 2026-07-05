@@ -31,4 +31,10 @@ public class SellerOrderController {
                                         @PathVariable Long orderId) {
         return orderService.getSellerOrder(user.username(), orderId);
     }
+
+    @PostMapping("/{orderId}/process")
+    public OrderDetailResponse processOrder(@AuthenticationPrincipal AuthenticatedUser user,
+                                            @PathVariable Long orderId) {
+        return orderService.processOrder(user.username(), orderId);
+    }
 }
