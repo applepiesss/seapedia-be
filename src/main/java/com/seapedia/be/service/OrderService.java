@@ -89,6 +89,32 @@ public class OrderService {
         return mapToOrderDetailResponse(order);
     }
 
+    @Transactional
+    public OrderDetailResponse processOrder(String username, Long orderId) {
+        User sellerUser = getUser(username);
+        SellerStore store = storeRepository.findByOwner(sellerUser)
+                .orElseThrow(() -> new IllegalArgumentException("Seller store not found"));
+
+        CustomerOrder order = orderRepository.findById(orderId)
+                .filter(o -> o.getStore().getId().equals(store.getId()))
+                .orElseThrow(() -> new IllegalArgumentException("Order not found or unauthorized"));
+
+        if (order.getStatus() != com.seapedia.be.enums.OrderStatus.SEDANG_DIKEMAS) {
+            throw new IllegalArgumentException("Order cannot be processed from status: " + order.getStatus());
+        }
+
+        order.setStatus(com.seapedia.be.enums.OrderStatus.MENUNGGU_PENGIRIM);
+        
+        com.seapedia.be.model.OrderStatusHistory history = com.seapedia.be.model.OrderStatusHistory.builder()
+                .order(order)
+                .status(com.seapedia.be.enums.OrderStatus.MENUNGGU_PENGIRIM)
+                .build();
+        
+        order.getStatusHistory().add(history);
+        
+        return mapToOrderDetailResponse(order);
+    }
+
     private OrderDetailResponse mapToOrderDetailResponse(CustomerOrder order) {
         List<OrderItemResponse> items = order.getItems().stream()
                 .map(item -> new OrderItemResponse(
@@ -108,6 +134,9 @@ public class OrderService {
                 order.getDeliveryMethod(),
                 order.getStatus(),
                 order.getSubtotal(),
+                order.getDiscount(),
+                order.getDiscountType(),
+                order.getDiscountCode(),
                 order.getDeliveryFee(),
                 order.getPpn(),
                 order.getFinalTotal(),

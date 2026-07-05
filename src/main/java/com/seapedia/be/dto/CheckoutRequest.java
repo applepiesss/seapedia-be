@@ -4,5 +4,6 @@ import com.seapedia.be.enums.DeliveryMethod;
 import jakarta.validation.constraints.NotNull;
 
 public record CheckoutRequest(
-    @NotNull DeliveryMethod deliveryMethod
+    @NotNull DeliveryMethod deliveryMethod,
+    String discountCode
 ) {}
