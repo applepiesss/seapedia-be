@@ -58,7 +58,7 @@ public class CustomerOrder {
     private BigDecimal finalTotal;
 
     @Builder.Default
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
