@@ -70,24 +70,29 @@ Once the backend is running, navigate to:
 
 ## 🔒 Security Hardening
 
-SEAPEDIA employs strict security measures across both the frontend and backend:
+SEAPEDIA employs strict security measures across both the frontend and backend to mitigate OWASP Top 10 vulnerabilities:
 
 ### 1. SQL Injection Prevention
 - The backend leverages **Spring Data JPA** and Hibernate exclusively for database interactions.
 - All dynamic query parameters are strictly bound via Prepared Statements, neutralizing SQL Injection (SQLi) attack vectors.
+- **Attack Mitigated:** Submitting a username like `' OR '1'='1` or a review comment like `'); DROP TABLE application_reviews; --` is treated as literal text, preventing malicious database manipulation.
 
 ### 2. XSS (Cross-Site Scripting) Prevention
 - The React frontend inherently escapes HTML entities in variables (e.g. `{review.comment}`), preventing script execution.
-- As an added defense-in-depth layer, **DOMPurify** is utilized to rigorously sanitize public user inputs (such as Application Reviews) before they are rendered to the DOM, stripping all malicious `<script>` tags or inline handlers.
+- As an added defense-in-depth layer, **DOMPurify** is utilized to rigorously sanitize public user inputs (such as Application Reviews) before they are sent to the server.
+- The UI features a robust **Toast notification system** that actively warns users if their input contains malicious payloads.
+- **Attack Mitigated:** Submitting a review comment containing `<script>alert('XSS')</script>` or `<img src="x" onerror="alert(1)">` will be immediately intercepted, sanitized, and blocked by the frontend, triggering a security warning toast.
 
-### 3. Input Validation
+### 3. Input Validation & Data Integrity
 - **Backend**: Standardized `@Valid` constraints (`@NotBlank`, `@Min`, `@Max`, `@Email`) are enforced on all DTOs. Advanced regex (`@Pattern`) is utilized to validate phone numbers.
 - **Frontend**: Client-side validation prevents invalid states (e.g. negative quantities, ratings > 5) from ever reaching the network layer.
+- **Attack Mitigated:** Submitting a rating of `999` or attempting to bypass cart limitations via API tools (e.g., Postman) will be cleanly rejected with a `400 Bad Request` by the Spring Boot validation layer.
 
 ### 4. Role-Based Access Control (RBAC) & Session Hardening
 - **Stateless Sessions**: Authentication is handled via stateless JWTs. Upon logout, the client actively destroys the token, fully invalidating the session from the browser's perspective.
 - **Strict Role Verification**: Every protected API route enforces authorization via `@PreAuthorize` annotations tailored to the user's *currently active role*, ensuring users cannot escalate privileges even if they own multiple roles.
-- **Resource Ownership**: Endpoints strictly verify resource ownership. (e.g., Sellers can only update their own products; Drivers can only complete jobs assigned to them).
+- **Resource Ownership**: Endpoints strictly verify resource ownership.
+- **Attack Mitigated:** A user with a `BUYER` role attempting to call `POST /api/seller/products` using their valid JWT will be blocked with a `403 Forbidden`. Similarly, a `DRIVER` attempting to complete a job assigned to a different driver ID will be rejected.
 
 ---
 
