@@ -23,7 +23,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4")
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
     runtimeOnly("org.postgresql:postgresql")
