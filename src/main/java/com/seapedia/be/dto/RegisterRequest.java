@@ -11,7 +11,7 @@ import java.util.Set;
 public record RegisterRequest(
         @NotBlank String username,
         @Email @NotBlank String email,
-        String phoneNumber,
+        @jakarta.validation.constraints.Pattern(regexp = "^(\\+?[0-9]{10,15})?$", message = "Invalid phone number format") String phoneNumber,
         @NotBlank @Size(min = 8) String password,
         @NotEmpty Set<Role> roles
 ) {}
